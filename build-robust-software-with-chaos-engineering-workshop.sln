@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "API", "src\API\API.csproj",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{998612D9-ADC6-456B-8F48-AB9F46EFB162}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "demo-runner", "src\demo-runner\demo-runner.csproj", "{DF44DE1D-E01B-4561-9C6F-3F0A43E47932}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,8 +16,13 @@ Global
 		{2EC14714-E0A1-4B7B-8500-882F2B404CEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2EC14714-E0A1-4B7B-8500-882F2B404CEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2EC14714-E0A1-4B7B-8500-882F2B404CEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF44DE1D-E01B-4561-9C6F-3F0A43E47932}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF44DE1D-E01B-4561-9C6F-3F0A43E47932}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF44DE1D-E01B-4561-9C6F-3F0A43E47932}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF44DE1D-E01B-4561-9C6F-3F0A43E47932}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2EC14714-E0A1-4B7B-8500-882F2B404CEA} = {998612D9-ADC6-456B-8F48-AB9F46EFB162}
+		{DF44DE1D-E01B-4561-9C6F-3F0A43E47932} = {998612D9-ADC6-456B-8F48-AB9F46EFB162}
 	EndGlobalSection
 EndGlobal
