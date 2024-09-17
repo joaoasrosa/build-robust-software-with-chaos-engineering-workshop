@@ -6,7 +6,7 @@ namespace API.Controllers;
 [ApiController]
 public class FlightsController : Controller
 {
-    // GET: api/fliglts//routes?from={from}&to={to}
+    // GET: api/flights//routes?from={from}&to={to}
     [HttpGet("routes")]
     public IActionResult GetRoutes(string from, string to)
     {

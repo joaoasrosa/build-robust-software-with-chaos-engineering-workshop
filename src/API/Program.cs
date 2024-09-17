@@ -16,6 +16,11 @@ builder.Services.AddSingleton<IDbConnection>(sp =>
     return new MySqlConnection(connectionString); // Requires MySql.Data NuGet package
 });
 
+builder.Services.AddRouting(routingServices =>
+{
+    routingServices.LowercaseUrls = true;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
