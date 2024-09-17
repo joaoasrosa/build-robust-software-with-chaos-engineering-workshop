@@ -402,3 +402,61 @@ FodyWeavers.xsd
 
 # Ignore environment files
 .env
+
+# Ignore node_modules directory (if applicable)
+node_modules/
+
+# Ignore log files
+*.log
+
+# Ignore Docker-related files
+docker-compose.override.yml
+docker-compose.override.yaml
+.dockerignore
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore temporary editor files (common for multiple IDEs/editors)
+*~ 
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*.save
+
+# Ignore Python bytecode (if applicable)
+__pycache__/
+*.py[cod]
+
+# Ignore temporary files created by editors (for example: JetBrains IDEs, VSCode)
+.idea/
+.vscode/
+
+# Ignore auto-generated documentation (if applicable)
+doc/
+docs/_build/
+
+# Ignore Git-related files that shouldn't be committed
+.git/
+.gitignore
+
+# Ignore system-specific files (for example: Windows)
+Thumbs.db
+Desktop.ini
+
+# Ignore backups or archive files
+*.gz
+*.zip
+*.tar
+*.tgz
+*.rar
+*.7z
+*.bak
+
+# Ignore compiled code (if applicable, for example Java or C)
+*.class
+*.o
+*.out
+*.exe
