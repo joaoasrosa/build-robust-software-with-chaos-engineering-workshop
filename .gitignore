@@ -399,3 +399,6 @@ FodyWeavers.xsd
 
 # Rider settings
 .idea/
+
+# Ignore environment files
+.env
