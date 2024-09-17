@@ -18,6 +18,7 @@ Make sure you have the following installed on your system:
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [MySQL Client](https://dev.mysql.com/downloads/)
+- [.NET Core SDK](https://dotnet.microsoft.com/download)
 
 ## Services
 
@@ -46,9 +47,9 @@ git clone https://github.com/joaoasrosa/build-robust-software-with-chaos-enginee
 cd build-robust-software-with-chaos-engineering-workshop
 ```
 
-### Step 2: Create an `.env` File
+### Step 2: Create an `.env` File (Optional for Docker Compose)
 
-Before running the Docker containers, create an `.env` file in the project root to inject sensitive information such as the MySQL root password.
+Before running the Docker containers, create an `.env` file in the project root to inject sensitive information such as the MySQL root password for Docker Compose.
 
 ```
 touch .env
@@ -62,7 +63,26 @@ MYSQL_ROOT_PASSWORD=my_secure_password
 
 This file sets the root password for the MySQL database.
 
-### Step 3: Update and Run Docker Compose
+### Step 3: Use User Secrets for Local Development
+
+For local development, store your sensitive data (like the database username and password) securely using **User Secrets**. Follow these steps:
+
+1. **Initialize User Secrets** in the project folder:
+
+   ```
+   dotnet user-secrets init
+   ```
+
+2. **Set the database username and password** using User Secrets:
+
+   ```
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection:DB_USER" "my_secure_user"
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection:DB_PASSWORD" "my_secure_password"
+   ```
+
+> **Note**: Replace `"my_secure_user"` and `"my_secure_password"` with the actual credentials provided during the workshop.
+
+### Step 4: Update and Run Docker Compose
 
 Use the following command to start the services defined in the `docker-compose.yml` file:
 
@@ -74,7 +94,7 @@ This will:
 - Start the **flights-db** service and expose it on port `3306`.
 - Start the **toxiproxy** service and expose it on ports `8474` (API) and `3307` (MySQL proxy).
 
-### Step 4: Add a Proxy in Toxiproxy
+### Step 5: Add a Proxy in Toxiproxy
 
 To enable proxying of MySQL traffic through **Toxiproxy** on **port 3307**, use the **Toxiproxy CLI**:
 
@@ -87,7 +107,7 @@ Explanation:
 - **`--upstream flights-db:3306`**: Forwards traffic from port **3307** to the **flights-db** container on **port 3306**.
 - **`mysql_proxy`**: The name of the proxy.
 
-### Step 5: Verify the Proxy
+### Step 6: Verify the Proxy
 
 To list active proxies and ensure the `mysql_proxy` was created successfully:
 
@@ -95,7 +115,7 @@ To list active proxies and ensure the `mysql_proxy` was created successfully:
 toxiproxy-cli list
 ```
 
-### Step 6: Test the Connection to MySQL via Toxiproxy
+### Step 7: Test the Connection to MySQL via Toxiproxy
 
 Once the proxy is created, test the MySQL connection through **Toxiproxy** by running:
 
@@ -105,27 +125,11 @@ mysql -h 127.0.0.1 -P 3307 -u root -p
 
 Enter the MySQL root password when prompted. If successful, this confirms that traffic is being correctly forwarded through Toxiproxy to MySQL.
 
-### Environment Variables
+### Using the Connection String in Code (With User Secrets)
 
-The `.env` file is used to inject sensitive configuration values. Below are the variables used in this project:
-
-- **MYSQL_ROOT_PASSWORD**: The root password for MySQL.
-
-### Stopping and Cleaning Up
-
-To stop the running containers:
+In your `appsettings.json`, use environment variables for the sensitive fields like this:
 
 ```
-docker-compose down
-```
-
-To remove all containers, volumes, and networks created by Docker Compose:
-
-```
-docker-compose down --volumes --remove-orphans
-```
-
-## License
-
-This project is licensed under the MIT License.
-
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=127.0.0.1;Port=3307;Database=flights
