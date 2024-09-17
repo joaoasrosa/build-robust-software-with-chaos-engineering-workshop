@@ -1,6 +1,5 @@
 @API_HostAddress = http://localhost:5073
 
-GET {{API_HostAddress}}/weatherforecast/
+# Test the new routes endpoint
+GET {{API_HostAddress}}/api/flights/routes?from=CityA&to=CityB
 Accept: application/json
-
-###

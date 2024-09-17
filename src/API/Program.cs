@@ -4,6 +4,7 @@ using MySql.Data.MySqlClient;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
+builder.Services.AddControllers();  // Register controllers
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -15,7 +16,6 @@ builder.Services.AddSingleton<IDbConnection>(sp =>
     return new MySqlConnection(connectionString); // Requires MySql.Data NuGet package
 });
 
-// Build the app
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -27,5 +27,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// App will run without the weatherforecast endpoint
+app.UseAuthorization();
+
+app.MapControllers();  // Map the controllers
+
 app.Run();
