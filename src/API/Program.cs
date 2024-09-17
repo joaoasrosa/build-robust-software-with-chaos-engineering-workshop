@@ -13,7 +13,12 @@ builder.Services.AddSingleton<IDbConnection>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var connectionString = configuration.GetConnectionString("DefaultConnection");
-    return new MySqlConnection(connectionString); // Requires MySql.Data NuGet package
+    var mySqlConnectionBuilder = new MySqlConnectionStringBuilder(connectionString)
+    {
+        UserID = builder.Configuration["ConnectionStrings:DefaultConnection:DB_USER"],
+        Password = builder.Configuration["ConnectionStrings:DefaultConnection:DB_PASSWORD"]
+    };
+    return new MySqlConnection(mySqlConnectionBuilder.ConnectionString);
 });
 
 builder.Services.AddRouting(routingServices =>
