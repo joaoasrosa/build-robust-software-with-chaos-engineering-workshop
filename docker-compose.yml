@@ -1,0 +1,25 @@
+services:
+  flights-db:
+    image: joaoasrosa/flights-db:latest
+    container_name: flights-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}  # Use the variable from the .env file
+      - MYSQL_DATABASE=flights
+    ports:
+      - "3306:3306"  # Expose MySQL port
+    networks:
+      - demo-network
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    container_name: toxiproxy
+    ports:
+      - "8474:8474"  # Expose Toxiproxy API port
+      - "3307:3307"  # Expose Toxiproxy MySQL proxy port on host
+    networks:
+      - demo-network
+
+networks:
+  demo-network:
+    name: demo-network
+    driver: bridge
