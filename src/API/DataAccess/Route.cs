@@ -1,0 +1,1 @@
+public record Route(string From, string To, string Airline);

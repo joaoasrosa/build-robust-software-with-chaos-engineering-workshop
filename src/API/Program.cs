@@ -1,4 +1,5 @@
 using System.Data;
+using API.DataAccess;
 using MySql.Data.MySqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,8 @@ builder.Services.AddSingleton<IDbConnection>(sp =>
     };
     return new MySqlConnection(mySqlConnectionBuilder.ConnectionString);
 });
+
+builder.Services.AddScoped<Routes>();
 
 builder.Services.AddRouting(routingServices =>
 {
