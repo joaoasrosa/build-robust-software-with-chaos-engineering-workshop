@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Random = System.Random;
 
 namespace demo_runner;
 
@@ -40,12 +41,14 @@ internal abstract class Program
 
             try
             {
+                var from = RandomPickAirport(airportCodes);
+                var to = RandomPickAirport(airportCodes);
                 var response = await client.GetAsync(
-                    "http://localhost:5073/api/flights/routes?from=OPO&to=LIS",
+                    "http://localhost:5073/api/flights/routes?from={from}&to={to}",
                     cancellationToken);
 
                 stopwatch.Stop(); // Stop the stopwatch after the API call
-                Console.WriteLine($"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}");
+                Console.WriteLine($"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}. From {from} tp {to}.");
             }
             catch (TaskCanceledException)
             {
@@ -59,6 +62,12 @@ internal abstract class Program
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
+    }
+
+    private static string RandomPickAirport(ImmutableArray<string> airportCodes)
+    {
+        var random = new Random();
+        return airportCodes[random.Next(airportCodes.Length)];
     }
 
     private static async Task<ImmutableArray<string>> LoadAirportCodes()
