@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace demo_runner;
 
@@ -28,6 +29,7 @@ internal abstract class Program
 
     private static async Task CallApiUntilKeyPress(CancellationToken cancellationToken)
     {
+        var airportCodes = await LoadAirportCodes();
         var client = new HttpClient();
         client.DefaultRequestHeaders.Accept.Clear();
         
@@ -57,5 +59,33 @@ internal abstract class Program
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
+    }
+
+    private static async Task<ImmutableArray<string>> LoadAirportCodes()
+    {
+        var httpClient = new HttpClient();
+        var response = await httpClient.GetStringAsync(
+            "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat");
+        var lines = response.Split('\n');
+
+        var iataCodes = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue; // Skip empty lines
+
+            var fields = line.Split(',');
+
+            if (fields.Length <= 4 || string.IsNullOrWhiteSpace(fields[4])) 
+                continue;
+            
+            var iataCode = fields[4].Replace("\"", "").Trim(); // Clean quotes and trim whitespace
+            if (iataCode.Length == 3) // Ensure it's a valid IATA code
+            {
+                iataCodes.Add(iataCode);
+            }
+        }
+
+        return iataCodes.ToImmutableArray();
     }
 }
