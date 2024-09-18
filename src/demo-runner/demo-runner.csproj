@@ -6,10 +6,13 @@
         <RootNamespace>demo_runner</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-    </PropertyGroup>
+      <UserSecretsId>856269c4-aa02-4915-8668-c970016aef4c</UserSecretsId>
+  </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="InfluxDB.Client" Version="4.18.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     </ItemGroup>
