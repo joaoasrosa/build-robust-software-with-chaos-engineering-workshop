@@ -38,7 +38,8 @@ internal abstract class Program
 
             try
             {
-                var response = await client.GetAsync("http://localhost:5073/api/flights/routes?from=OPO&to=LIS",
+                var response = await client.GetAsync(
+                    "http://localhost:5073/api/flights/routes?from=OPO&to=LIS",
                     cancellationToken);
 
                 stopwatch.Stop(); // Stop the stopwatch after the API call
