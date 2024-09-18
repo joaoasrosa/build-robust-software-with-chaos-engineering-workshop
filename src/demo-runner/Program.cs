@@ -38,13 +38,11 @@ internal abstract class Program
 
             try
             {
-                var json = await client.GetStringAsync(
-                    "http://localhost:5073/api/flights/routes?from=OPO&to=LIS", 
-                    cancellationToken
-                );
+                var response = await client.GetAsync("http://localhost:5073/api/flights/routes?from=OPO&to=LIS",
+                    cancellationToken);
 
                 stopwatch.Stop(); // Stop the stopwatch after the API call
-                Console.WriteLine($"API call took {stopwatch.ElapsedMilliseconds} ms");
+                Console.WriteLine($"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}");
             }
             catch (TaskCanceledException)
             {
