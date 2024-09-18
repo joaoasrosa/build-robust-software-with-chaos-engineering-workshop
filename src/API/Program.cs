@@ -10,7 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add Dapper and database connection (MySQL) from appsettings.json
-builder.Services.AddSingleton<IDbConnection>(sp =>
+builder.Services.AddTransient<IDbConnection>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var connectionString = configuration.GetConnectionString("DefaultConnection");
