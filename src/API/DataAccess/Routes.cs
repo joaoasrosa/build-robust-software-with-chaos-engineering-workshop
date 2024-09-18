@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Data;
 using Dapper;
 
@@ -13,7 +12,7 @@ public class Routes
         _connection = connection;
     }
 
-    public ImmutableArray<Route> GetRoutes(string from, string to)
+    public IEnumerable<Route> GetRoutes(string from, string to)
     {
         return _connection.Query<Route>(
             "SELECT source_airport.iata AS 'From', destination_airport.iata AS 'To', airlines.name AS 'Airline' "+
@@ -23,6 +22,6 @@ public class Routes
             "INNER JOIN airlines on routes.alid = airlines.alid "+
             "WHERE source_airport.iata = @From AND destination_airport.iata = @To",
             new {From = from, To = to}
-        ).ToImmutableArray();
+        ).ToList();
     }
 }
