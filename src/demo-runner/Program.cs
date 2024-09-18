@@ -72,6 +72,8 @@ internal abstract class Program
 
     private static async Task<ImmutableArray<string>> LoadAirportCodes()
     {
+        Console.WriteLine("Loading the airport codes...");
+        
         var httpClient = new HttpClient();
         var response = await httpClient.GetStringAsync(
             "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat");
