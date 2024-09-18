@@ -1,5 +1,8 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Random = System.Random;
 
 namespace demo_runner;
@@ -8,36 +11,44 @@ internal abstract class Program
 {
     static async Task Main(string[] args)
     {
-        // Token to signal when to stop the action
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddUserSecrets<Program>()
+            .Build();
+
+        var serviceCollection = new ServiceCollection();
+        ConfigureServices(serviceCollection, configuration);
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        var metricsLogger = serviceProvider.GetService<IMetricsLogger>();
+
         var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
 
-        // Start the action in a background task
-        var actionTask = CallApiUntilKeyPress(cancellationToken);
+        var actionTask = CallApiUntilKeyPress(cancellationToken, metricsLogger ?? throw new InvalidOperationException());
 
-        // Wait for any key press
         Console.WriteLine("Press any key to stop the calls to the API...");
         Console.ReadKey();
 
-        // Signal the action to stop
         await cancellationTokenSource.CancelAsync();
 
-        // Wait for the action task to complete
         await actionTask;
 
         Console.WriteLine("API calls stopped.");
     }
 
-    private static async Task CallApiUntilKeyPress(CancellationToken cancellationToken)
+    private static async Task CallApiUntilKeyPress(
+        CancellationToken cancellationToken,
+        IMetricsLogger metricsLogger)
     {
         var airportCodes = await LoadAirportCodes();
         var client = new HttpClient();
         client.DefaultRequestHeaders.Accept.Clear();
-        
+
         while (!cancellationToken.IsCancellationRequested)
         {
-            var stopwatch = new Stopwatch(); // Create a new stopwatch
-            stopwatch.Start(); // Start the stopwatch
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             try
             {
@@ -47,18 +58,28 @@ internal abstract class Program
                     "http://localhost:5073/api/flights/routes?from={from}&to={to}",
                     cancellationToken);
 
-                stopwatch.Stop(); // Stop the stopwatch after the API call
-                Console.WriteLine($"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}. From {from} tp {to}.");
+                stopwatch.Stop();
+
+                if (metricsLogger != null)
+                {
+                    await metricsLogger.LogMetricAsync(
+                        "api_call_duration",
+                        stopwatch.ElapsedMilliseconds,
+                        "duration",
+                        "status",
+                        response.StatusCode.ToString());
+                }
+
+                Console.WriteLine(
+                    $"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}. From {from} tp {to}.");
             }
             catch (TaskCanceledException)
             {
-                // Handle the case where the task is canceled due to cancellationToken
                 Console.WriteLine("API call canceled.");
                 break;
             }
             catch (Exception ex)
             {
-                // Handle any other exceptions
                 Console.WriteLine($"An error occurred: {ex.Message}");
             }
         }
@@ -73,7 +94,7 @@ internal abstract class Program
     private static async Task<ImmutableArray<string>> LoadAirportCodes()
     {
         Console.WriteLine("Loading the airport codes...");
-        
+
         var httpClient = new HttpClient();
         var response = await httpClient.GetStringAsync(
             "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat");
@@ -83,20 +104,41 @@ internal abstract class Program
 
         foreach (var line in lines)
         {
-            if (string.IsNullOrWhiteSpace(line)) continue; // Skip empty lines
+            if (string.IsNullOrWhiteSpace(line)) continue;
 
             var fields = line.Split(',');
 
-            if (fields.Length <= 4 || string.IsNullOrWhiteSpace(fields[4])) 
+            if (fields.Length <= 4 || string.IsNullOrWhiteSpace(fields[4]))
                 continue;
-            
-            var iataCode = fields[4].Replace("\"", "").Trim(); // Clean quotes and trim whitespace
-            if (iataCode.Length == 3) // Ensure it's a valid IATA code
+
+            var iataCode = fields[4].Replace("\"", "").Trim();
+            if (iataCode.Length == 3)
             {
                 iataCodes.Add(iataCode);
             }
         }
 
         return iataCodes.ToImmutableArray();
+    }
+
+    private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    {
+        var influxDbUrl = configuration["InfluxDB:Url"];
+        var influxDbToken = configuration["InfluxDB:Token"];
+        var influxDbOrg = configuration["InfluxDB:Org"];
+        var influxDbBucket = configuration["InfluxDB:Bucket"];
+
+        if (influxDbUrl == null || influxDbToken == null || influxDbBucket == null || influxDbOrg == null) return;
+        
+        var influxLoggerProvider = new InfluxDbLoggerProvider(
+            url: influxDbUrl,
+            token: influxDbToken,
+            bucket: influxDbBucket,
+            org: influxDbOrg,
+            logLevel: LogLevel.Information);
+
+        services.AddSingleton<ILoggerProvider>(influxLoggerProvider);
+        services.AddSingleton<IMetricsLogger>(provider => influxLoggerProvider.CreateMetricsLogger("default"));
+        services.AddLogging(builder => { builder.AddProvider(influxLoggerProvider); });
     }
 }

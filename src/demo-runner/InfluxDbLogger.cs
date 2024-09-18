@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace demo_runner;
 
-public class InfluxDbLogger : ILogger
+public class InfluxDbLogger : ILogger, IMetricsLogger
 {
     private readonly string _categoryName;
     private readonly InfluxDBClient _influxClient;
@@ -63,22 +63,21 @@ public class InfluxDbLogger : ILogger
         await writeApi.WritePointAsync(point, _bucket, _org);
     }
 
-    // Method to log metrics (such as CPU usage, request duration, etc.)
-    public async Task LogMetric(
-        string metricName,
-        double value,
-        string fieldName = "value",
-        string? tagKey = null,
+    public async Task LogMetricAsync(
+        string metricName, 
+        double value, 
+        string fieldName = "value", 
+        string? tagKey = null, 
         string? tagValue = null)
     {
         var point = PointData
-            .Measurement(metricName) // Measurement name (e.g., "cpu_usage")
-            .Field(fieldName, value) // Field with value
-            .Timestamp(DateTime.UtcNow, WritePrecision.Ns); // Timestamp
+            .Measurement(metricName)           // Metric name (e.g., "cpu_usage")
+            .Field(fieldName, value)           // Metric value
+            .Timestamp(DateTime.UtcNow, WritePrecision.Ns);  // Timestamp
 
         if (tagKey != null && tagValue != null)
         {
-            point.Tag(tagKey, tagValue); // Optional tag for the metric
+            point.Tag(tagKey, tagValue);       // Optional tag (e.g., "status" -> "200")
         }
 
         var writeApi = _influxClient.GetWriteApiAsync();
@@ -108,13 +107,17 @@ public class InfluxDbLoggerProvider : ILoggerProvider
         _org = org;
         _logLevel = logLevel;
     }
+    
+    public IMetricsLogger CreateMetricsLogger(string categoryName)
+    {
+        return new InfluxDbLogger(categoryName, _influxClient, _bucket, _org, _logLevel);
+    }
 
     public ILogger CreateLogger(string categoryName)
     {
-        return _loggers.GetOrAdd(categoryName,
-            name => new InfluxDbLogger(name, _influxClient, _bucket, _org, _logLevel));
+        return _loggers.GetOrAdd(categoryName, name => new InfluxDbLogger(name, _influxClient, _bucket, _org, _logLevel));
     }
-
+    
     public void Dispose()
     {
         _influxClient.Dispose();
