@@ -65,9 +65,12 @@ internal abstract class Program
                     await metricsLogger.LogMetricAsync(
                         "api_call_duration",
                         stopwatch.ElapsedMilliseconds,
-                        "duration",
-                        "status",
-                        response.StatusCode.ToString());
+                        "duration");
+                    
+                    await metricsLogger.LogMetricAsync(
+                        "api_call_http_status",
+                        (int)response.StatusCode,
+                        "http_status");
                 }
 
                 Console.WriteLine(
