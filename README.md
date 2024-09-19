@@ -1,4 +1,4 @@
-# Build Robust Software with Chaos Engineering Workshop: Infrastructure
+# Build Robust Software with Chaos Engineering Workshop
 
 This repository is part of the **Build Robust Software with Chaos Engineering Workshop** and demonstrates how to set up and run a **MySQL Flights Database** alongside **Toxiproxy** using Docker Compose. The `flights-db` image contains a MySQL database pre-loaded with flights-related data, and **Toxiproxy** allows you to simulate network conditions for testing fault tolerance.
 
