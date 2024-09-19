@@ -21,7 +21,7 @@ public class FlightsController : Controller
         _routes = routes;
         _logger = logger;
 
-        var timeoutInMilliseconds = configuration.GetValue<int>("PollySettings:TimeoutMilliseconds");
+        var timeoutInMilliseconds = configuration.GetValue<int>("PollySettings:Timeout:Milliseconds");
 
         _timeoutPolicy = Policy.Timeout(
             TimeSpan.FromMilliseconds(timeoutInMilliseconds),
