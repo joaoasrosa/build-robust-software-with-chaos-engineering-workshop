@@ -10,11 +10,16 @@ namespace API.Controllers;
 public class FlightsController : Controller
 {
     private readonly Routes _routes;
+    private readonly ILogger<FlightsController> _logger;
     private readonly TimeoutPolicy _timeoutPolicy;
 
-    public FlightsController(Routes routes, IConfiguration configuration)
+    public FlightsController(
+        Routes routes, 
+        IConfiguration configuration,
+        ILogger<FlightsController> logger)
     {
         _routes = routes;
+        _logger = logger;
 
         var timeoutInMilliseconds = configuration.GetValue<int>("PollySettings:TimeoutMilliseconds");
 
@@ -35,8 +40,9 @@ public class FlightsController : Controller
             var result = _timeoutPolicy.Execute(() => _routes.GetRoutes(from, to));
             return Ok(result);
         }
-        catch (TimeoutRejectedException tr)
+        catch (TimeoutRejectedException timeoutRejectedException)
         {
+            _logger.LogWarning(timeoutRejectedException, "Timeout rejected");
             return StatusCode(500, "The request timed out.");
         }
     }
