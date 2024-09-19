@@ -13,8 +13,9 @@ This repository is part of the **Build Robust Software with Chaos Engineering Wo
    5. [Step 5: Simulating Timeout with Latency and Jitter (exercise2)](#step-5-simulating-timeout-with-latency-and-jitter-exercise2)
    6. [Step 6: Simulating Timeouts with Retry Mechanism (exercise3)](#step-6-simulating-timeouts-with-retry-mechanism-exercise3)
    7. [Step 7: Simulating Failures with Circuit Breaker (exercise4)](#step-7-simulating-failures-with-circuit-breaker-exercise4)
-   8. [Step 8: Verify the Proxy](#step-8-verify-the-proxy)
-   9. [Step 9: Test the Connection to MySQL via Toxiproxy](#step-9-test-the-connection-to-mysql-via-toxiproxy)
+   8. [Step 8: Testing the Health Endpoint (exercise5)](#step-8-testing-the-health-endpoint-exercise5)
+   9. [Step 9: Verify the Proxy](#step-9-verify-the-proxy)
+   10. [Step 10: Test the Connection to MySQL via Toxiproxy](#step-10-test-the-connection-to-mysql-via-toxiproxy)
 4. [Common Docker Commands](#common-docker-commands-for-development-and-debugging)
 5. [Advanced Configuration for Local Development](#advanced-configuration-for-local-development)
 6. [Environment Variables](#environment-variables)
@@ -183,15 +184,82 @@ Once the timeout toxic is applied, run your application and observe how it handl
 
 The application should respond quickly with an error once the circuit breaker is tripped, instead of retrying the database calls repeatedly.
 
-### Step 8: Verify the Proxy
+### Step 8: Testing the Health Endpoint (exercise5)
 
-To list active proxies and ensure the `mysql_proxy` was created successfully:
+In the `exercise5` branch, a **health endpoint** is introduced to monitor the status of both the MySQL connection and the circuit breaker.
+
+Ensure that you have switched to the `exercise5` branch:
+
+```
+git checkout exercise5
+```
+
+#### Health Endpoint Overview
+
+The health endpoint is accessible at **`/health/`** and provides a JSON response that includes the health status of the system. The two components being monitored are:
+
+1. **MySQL Connection**: The status of the MySQL database connection.
+2. **Circuit Breaker**: The status of the circuit breaker (whether it's open or closed).
+
+The JSON output from the endpoint looks like this:
+
+```json
+{
+  "status": "Healthy",
+  "checks": [
+    {
+      "name": "mysql",
+      "status": "Healthy",
+      "description": "",
+      "duration": 4.7782
+    },
+    {
+      "name": "circuitBreaker",
+      "status": "Healthy",
+      "description": "Circuit breaker is currently Closed.",
+      "duration": 0.0418
+    }
+  ],
+  "totalDuration": 4.8251
+}
+```
+
+#### Fields Explained
+
+- `status`: Overall system status (e.g., "Healthy" or "Unhealthy").
+- `checks`: A list of individual checks, including:
+   - `name`: The name of the service being checked (e.g., "mysql" or "circuitBreaker").
+   - `status`: The health status of that service (e.g., "Healthy" or "Unhealthy").
+   - `description`: Additional information (e.g., circuit breaker status).
+   - `duration`: The time taken to complete the health check (in milliseconds).
+- `totalDuration`: The total time taken for all health checks.
+
+#### Testing the Health Endpoint
+
+To check the health of the system, query the `/health/` endpoint:
+
+- Using curl:
+   
+   ```
+   curl http://localhost:5000/health/
+   ```
+
+- Using a Browser: Simply navigate to `http://localhost:PORT_NUMBER/health/`.
+
+
+#### Monitoring Health for Chaos Engineering
+
+During chaos engineering experiments (e.g., introducing network latency, timeouts, or circuit breaker tripping), this health endpoint can be used to monitor the real-time status of the system and verify its resilience.
+
+### Step 9: Verify the Proxy
+
+To list active proxies and ensure the mysql_proxy was created successfully:
 
 ```
 toxiproxy-cli list
 ```
 
-### Step 9: Test the Connection to MySQL via Toxiproxy
+### Step 10: Test the Connection to MySQL via Toxiproxy
 
 Once the proxy is created, test the MySQL connection through **Toxiproxy** by running:
 
