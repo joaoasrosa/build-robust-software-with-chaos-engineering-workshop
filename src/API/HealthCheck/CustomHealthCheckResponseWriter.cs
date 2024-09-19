@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace API;
+namespace API.HealthCheck;
 
 public static class CustomHealthCheckResponseWriter
 {
