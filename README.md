@@ -10,8 +10,11 @@ This repository is part of the **Build Robust Software with Chaos Engineering Wo
    2. [Step 2: Create an `.env` File](#step-2-create-an-env-file-optional)
    3. [Step 3: Update and Run Docker Compose](#step-3-update-and-run-docker-compose)
    4. [Step 4: Add a Proxy in Toxiproxy](#step-4-add-a-proxy-in-toxiproxy)
-   5. [Step 5: Verify the Proxy](#step-5-verify-the-proxy)
-   6. [Step 6: Test the Connection to MySQL via Toxiproxy](#step-6-test-the-connection-to-mysql-via-toxiproxy)
+   5. [Step 5: Simulating Timeout with Latency and Jitter (exercise2)](#step-5-simulating-timeout-with-latency-and-jitter-exercise2)
+   6. [Step 6: Simulating Timeouts with Retry Mechanism (exercise3)](#step-6-simulating-timeouts-with-retry-mechanism-exercise3)
+   7. [Step 7: Simulating Failures with Circuit Breaker (exercise4)](#step-7-simulating-failures-with-circuit-breaker-exercise4)
+   8. [Step 8: Verify the Proxy](#step-8-verify-the-proxy)
+   9. [Step 9: Test the Connection to MySQL via Toxiproxy](#step-9-test-the-connection-to-mysql-via-toxiproxy)
 4. [Common Docker Commands](#common-docker-commands-for-development-and-debugging)
 5. [Advanced Configuration for Local Development](#advanced-configuration-for-local-development)
 6. [Environment Variables](#environment-variables)
@@ -100,7 +103,87 @@ Explanation:
 - **`--upstream flights-db:3306`**: Forwards traffic from port **3307** to the **flights-db** container on **port 3306**.
 - **`mysql_proxy`**: The name of the proxy.
 
-### Step 5: Verify the Proxy
+### Step 5: Simulating Timeout with Latency and Jitter (exercise2)
+
+If you're working on the `exercise2` branch, please make sure you have switched to the correct branch:
+
+```
+git checkout exercise2
+```
+
+In this branch, we introduce a **stability pattern**: a timeout that simulates network instability using **Toxiproxy**.
+
+To simulate latency with jitter, you can add a "toxic" (fault) to the `mysql_proxy` created earlier. Use the following **Toxiproxy CLI** command to simulate network instability by adding both latency and jitter:
+
+```
+toxiproxy-cli toxic add -t latency --tox 1 -a "latency=100" -a "jitter=900" mysql_proxy
+```
+
+Explanation:
+- **`-t latency`**: Specifies that the toxic being added is a latency fault.
+- **`--tox 1`**: Sets the toxicity level to 100% (meaning all traffic is affected).
+- **`-a "latency=100"`**: Adds a base latency of 100ms to all traffic.
+- **`-a "jitter=900"`**: Adds random variability (jitter) of up to 900ms to simulate real-world network conditions where latency fluctuates unpredictably.
+
+> **Result**: This setup simulates a scenario where the MySQL connection can experience random latencies ranging from 100ms to 1000ms (100 + 900), leading to potential timeouts in your application.
+
+### Step 6: Simulating Timeouts with Retry Mechanism (exercise3)
+
+If you're working on the `exercise3` branch, ensure that you switch to it:
+
+```
+git checkout exercise3
+```
+
+In this branch, a **retry mechanism** is added to handle database calls in case of instability. This branch helps test how the application responds to database timeouts by retrying failed operations.
+
+You can simulate database timeouts using the following **Toxiproxy CLI** command:
+
+```
+toxiproxy-cli toxic add -t timeout --tox 0.8 -a "timeout=500" mysql_proxy
+```
+
+Explanation:
+- **`-t timeout`**: Adds a timeout toxic to the proxy.
+- **`--tox 0.8`**: Specifies that 80% of traffic will be affected by the timeout.
+- **`-a "timeout=500"`**: Adds a timeout delay of 500ms to the affected traffic.
+
+> **Result**: This toxic simulates a scenario where 80% of the MySQL traffic will timeout after 500ms, triggering the retry mechanism in the application.
+
+### Step 7: Simulating Failures with Circuit Breaker (exercise4)
+
+In the `exercise4` branch, the application introduces a **circuit breaker pattern** around the retries to prevent failure propagation and apply back pressure.
+
+Ensure that you have switched to the `exercise4` branch:
+
+```
+git checkout exercise4
+```
+
+#### Circuit Breaker Pattern
+
+The **circuit breaker** is a stability pattern used to stop overwhelming a failing service. When a certain number of consecutive failures occur (such as database timeouts), the circuit breaker “trips,” preventing further retries for a short period. This helps avoid continuous failure propagation and allows the service to recover.
+
+You can simulate a failure scenario by adding a toxic that causes timeouts for 100% of the traffic, forcing the circuit breaker to trip:
+
+```
+toxiproxy-cli toxic add -t timeout --tox 1 -a "timeout=100" mysql_proxy
+```
+
+Explanation:
+- **`-t timeout`**: Specifies that a timeout toxic is being added.
+- **`--tox 1`**: Applies the timeout to 100% of the traffic.
+- **`-a "timeout=100"`**: Causes all affected traffic to timeout after 100ms.
+
+> **Result**: This toxic will cause all database requests to fail (timeout after 100ms). After a certain number of failures, the circuit breaker will trip, stopping further requests and protecting the application from continuous failures.
+
+#### Observing Circuit Breaker Behavior
+
+Once the timeout toxic is applied, run your application and observe how it handles the failures. The circuit breaker should eventually trip after detecting several consecutive failures, and the application will stop sending requests until the circuit breaker resets.
+
+The application should respond quickly with an error once the circuit breaker is tripped, instead of retrying the database calls repeatedly.
+
+### Step 8: Verify the Proxy
 
 To list active proxies and ensure the `mysql_proxy` was created successfully:
 
@@ -108,7 +191,7 @@ To list active proxies and ensure the `mysql_proxy` was created successfully:
 toxiproxy-cli list
 ```
 
-### Step 6: Test the Connection to MySQL via Toxiproxy
+### Step 9: Test the Connection to MySQL via Toxiproxy
 
 Once the proxy is created, test the MySQL connection through **Toxiproxy** by running:
 
@@ -180,6 +263,22 @@ toxiproxy-cli toxic add mysql_proxy --type latency --latency 1000
 ```
 
 This adds 1000ms of latency to all traffic passing through the MySQL proxy.
+
+### Updating the Proxy
+
+To update the latency or remove it, you can use the following commands:
+
+- **Update the latency**:
+  
+  ```
+  toxiproxy-cli toxic update mysql_proxy --name latency --attribute latency=500
+  ```
+
+- **Remove the toxic**:
+  
+  ```
+  toxiproxy-cli toxic remove mysql_proxy --name latency
+  ```
 
 ## Cleanup
 
