@@ -10,7 +10,10 @@ public class Routes
     private readonly IDbConnection _connection;
     private readonly RetryPolicy _retryPolicy;
 
-    public Routes(IDbConnection connection, IConfiguration configuration, ILogger<Routes> logger)
+    public Routes(
+        IDbConnection connection,
+        IConfiguration configuration,
+        ILogger<Routes> logger)
     {
         _connection = connection;
 
