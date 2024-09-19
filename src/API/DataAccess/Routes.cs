@@ -17,8 +17,8 @@ public class Routes
     {
         _connection = connection;
 
-        var retryCount = configuration.GetValue<int>("PollySettings:RetryCount");
-        var baseDelayMilliseconds = configuration.GetValue<int>("PollySettings:RetryBaseDelayMilliseconds");
+        var retryCount = configuration.GetValue<int>("PollySettings:Retry:Count");
+        var baseDelayMilliseconds = configuration.GetValue<int>("PollySettings:Retry:BaseDelayMilliseconds");
 
         _retryPolicy = Policy
             .Handle<Exception>()
