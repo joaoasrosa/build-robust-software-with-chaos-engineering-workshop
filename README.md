@@ -5,7 +5,8 @@ This repository is part of the **Build Robust Software with Chaos Engineering Wo
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
 2. [Services](#services)
-3. [Setup and Usage](#setup-and-usage)
+3. [Database Schema](#database-schema)
+4. [Setup and Usage](#setup-and-usage)
    1. [Step 1: Clone the Repository](#step-1-clone-the-repository)
    2. [Step 2: Create an `.env` File](#step-2-create-an-env-file-optional)
    3. [Step 3: Update and Run Docker Compose](#step-3-update-and-run-docker-compose)
@@ -16,14 +17,14 @@ This repository is part of the **Build Robust Software with Chaos Engineering Wo
    8. [Step 8: Testing the Health Endpoint (exercise5)](#step-8-testing-the-health-endpoint-exercise5)
    9. [Step 9: Verify the Proxy](#step-9-verify-the-proxy)
    10. [Step 10: Test the Connection to MySQL via Toxiproxy](#step-10-test-the-connection-to-mysql-via-toxiproxy)
-4. [Common Docker Commands](#common-docker-commands-for-development-and-debugging)
-5. [Advanced Configuration for Local Development](#advanced-configuration-for-local-development)
-6. [Environment Variables](#environment-variables)
-7. [Inducing Network Latency with Toxiproxy](#inducing-network-latency-with-toxiproxy)
-8. [Cleanup](#cleanup)
-9. [Troubleshooting](#troubleshooting)
-10. [Contributing](#contributing)
-11. [License](#license)
+5. [Common Docker Commands](#common-docker-commands-for-development-and-debugging)
+6. [Advanced Configuration for Local Development](#advanced-configuration-for-local-development)
+7. [Environment Variables](#environment-variables)
+8. [Inducing Network Latency with Toxiproxy](#inducing-network-latency-with-toxiproxy)
+9. [Cleanup](#cleanup)
+10. [Troubleshooting](#troubleshooting)
+11. [Contributing](#contributing)
+12. [License](#license)
 
 ## Prerequisites
 
@@ -51,6 +52,75 @@ This project includes the following services:
 - **Port 3307**: Exposes a MySQL proxy on **port 3307**, forwarding traffic to **flights-db** on port **3306**.
 
 Toxiproxy is used to simulate network conditions such as latency, packet loss, and more, to test the fault tolerance of applications interacting with the database.
+
+## Database Schema
+
+Here is a representation of the database schema for the project, including relationships between tables like `airlines`, `airports`, `countries`, `locales`, and `routes`.
+
+```mermaid
+erDiagram
+    AIRLINES {
+        int alid PK "Primary key (Airline ID)"
+        varchar name "Airline name"
+        varchar iata "IATA code"
+        varchar icao "ICAO code"
+        varchar callsign "Airline callsign"
+        varchar country "Country name"
+        int uid "User ID (optional)"
+        varchar alias "Airline alias"
+        char mode "Mode (F for full, N for inactive)"
+        char active "Active status (Y/N)"
+    }
+
+    AIRPORTS {
+        int apid PK "Primary key (Airport ID)"
+        varchar name "Airport name"
+        varchar city "City name"
+        varchar country "Country name"
+        varchar iata "IATA code"
+        varchar icao "ICAO code"
+        double x "Longitude"
+        double y "Latitude"
+        int elevation "Elevation"
+        int uid "User ID (optional)"
+        float timezone "Timezone"
+        char dst "Daylight saving time"
+        varchar tz_id "Timezone ID"
+        varchar type "Airport type"
+        varchar source "Source of the data"
+        varchar country_code FK "Foreign key to countries.code"
+    }
+
+    COUNTRIES {
+        varchar code PK "Country code (ISO)"
+        varchar name "Country name"
+        varchar oa_code "Other code (optional)"
+        char dst "Daylight saving time"
+    }
+
+    LOCALES {
+        varchar locale PK "Locale code"
+        varchar name "Locale name"
+    }
+
+    ROUTES {
+        int rid PK "Primary key (Route ID)"
+        varchar airline "Airline code"
+        int alid FK "Foreign key to airlines.alid"
+        varchar src_ap "Source airport code"
+        int src_apid FK "Foreign key to airports.apid"
+        varchar dst_ap "Destination airport code"
+        int dst_apid FK "Foreign key to airports.apid"
+        varchar codeshare "Codeshare information"
+        tinyint stops "Number of stops"
+        varchar equipment "Equipment used on the route"
+    }
+
+    AIRLINES ||--o{ ROUTES : "uses"
+    AIRPORTS ||--o{ ROUTES : "serves"
+    COUNTRIES ||--o{ AIRPORTS : "located in"
+  ```
+
 
 ## Setup and Usage
 
