@@ -1,6 +1,7 @@
 using API.DataAccess;
 using Microsoft.AspNetCore.Mvc;
 using Polly;
+using Polly.CircuitBreaker;
 using Polly.Timeout;
 
 namespace API.Controllers;
@@ -40,10 +41,20 @@ public class FlightsController : Controller
             var result = _timeoutPolicy.Execute(() => _routes.GetRoutes(from, to));
             return Ok(result);
         }
+        catch (BrokenCircuitException brokenCircuitException)
+        {
+            _logger.LogWarning(brokenCircuitException, "Circuit breaker is open");
+            return StatusCode(503, "Service unavailable. Please try again later.");
+        }
         catch (TimeoutRejectedException timeoutRejectedException)
         {
             _logger.LogWarning(timeoutRejectedException, "Timeout rejected");
             return StatusCode(500, "The request timed out.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error occurred");
+            return StatusCode(500, "An unexpected error occurred.");
         }
     }
 }
