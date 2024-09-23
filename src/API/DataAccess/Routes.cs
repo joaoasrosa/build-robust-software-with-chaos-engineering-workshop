@@ -1,17 +1,18 @@
 using System.Data;
 using Dapper;
 using Polly;
+using Polly.Wrap;
 
 namespace API.DataAccess
 {
     public class Routes
     {
         private readonly IDbConnection _connection;
-        private readonly Policy _resiliencePolicy;
+        private readonly PolicyWrap _resiliencePolicy;
 
         public Routes(
             IDbConnection connection,
-            Policy resiliencePolicy)
+            PolicyWrap resiliencePolicy)
         {
             _connection = connection;
             _resiliencePolicy = resiliencePolicy;

@@ -2,6 +2,9 @@ using System.Data;
 using API.DataAccess;
 using MySql.Data.MySqlClient;
 using Polly;
+using Polly.CircuitBreaker;
+using Polly.Retry;
+using Polly.Wrap;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,17 +26,17 @@ builder.Services.AddScoped<IDbConnection>(sp =>
 
 builder.Services.AddScoped<Routes>();
 
-builder.Services.AddSingleton<Policy>(sp =>
+builder.Services.AddSingleton<RetryPolicy>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     var logger = sp.GetRequiredService<ILogger<Routes>>();
 
-    var retryCount = configuration.GetValue<int>("PollySettings:Retry:Count");
-    var baseDelayMilliseconds = configuration.GetValue<int>("PollySettings:Retry:BaseDelayMilliseconds");
-    var exceptionsAllowedBeforeBreaking = configuration.GetValue<int>("PollySettings:CircuitBreaker:ExceptionsAllowedBeforeBreaking");
-    var durationOfBreakMilliseconds = configuration.GetValue<int>("PollySettings:CircuitBreaker:DurationOfBreakMilliseconds");
+    var retryCount =
+        configuration.GetValue<int>("PollySettings:Retry:Count");
+    var baseDelayMilliseconds =
+        configuration.GetValue<int>("PollySettings:Retry:BaseDelayMilliseconds");
 
-    var retryPolicy = Policy
+    return Policy
         .Handle<Exception>()
         .WaitAndRetry(
             retryCount: retryCount,
@@ -41,36 +44,45 @@ builder.Services.AddSingleton<Policy>(sp =>
                 TimeSpan.FromMilliseconds(baseDelayMilliseconds * Math.Pow(2, attempt - 1)),
             onRetry: (exception, timeSpan, retryAttempt, context) =>
             {
-                logger.LogWarning($"Retry {retryAttempt} after {timeSpan.TotalMilliseconds} ms due to: {exception.Message}");
+                logger.LogWarning(
+                    $"Retry {retryAttempt} after {timeSpan.TotalMilliseconds} ms due to: {exception.Message}");
             }
         );
+});
 
-    var circuitBreakerPolicy = Policy
+builder.Services.AddSingleton<CircuitBreakerPolicy>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var logger = sp.GetRequiredService<ILogger<Routes>>();
+
+    var exceptionsAllowedBeforeBreaking =
+        configuration.GetValue<int>("PollySettings:CircuitBreaker:ExceptionsAllowedBeforeBreaking");
+    var durationOfBreakMilliseconds =
+        configuration.GetValue<int>("PollySettings:CircuitBreaker:DurationOfBreakMilliseconds");
+
+    return Policy
         .Handle<Exception>()
         .CircuitBreaker(
             exceptionsAllowedBeforeBreaking: exceptionsAllowedBeforeBreaking,
             durationOfBreak: TimeSpan.FromMilliseconds(durationOfBreakMilliseconds),
             onBreak: (exception, timespan) =>
             {
-                logger.LogWarning($"Circuit breaker opened for {timespan.TotalMilliseconds} ms due to: {exception.Message}");
+                logger.LogWarning(
+                    $"Circuit breaker opened for {timespan.TotalMilliseconds} ms due to: {exception.Message}");
             },
-            onReset: () =>
-            {
-                logger.LogInformation("Circuit breaker reset.");
-            },
-            onHalfOpen: () =>
-            {
-                logger.LogInformation("Circuit breaker is half-open. Next call is a trial.");
-            }
+            onReset: () => { logger.LogInformation("Circuit breaker reset."); },
+            onHalfOpen: () => { logger.LogInformation("Circuit breaker is half-open. Next call is a trial."); }
         );
+});
 
+builder.Services.AddSingleton<PolicyWrap>(sp =>
+{
+    var retryPolicy = sp.GetRequiredService<RetryPolicy>();
+    var circuitBreakerPolicy = sp.GetRequiredService<CircuitBreakerPolicy>();
     return Policy.Wrap(retryPolicy, circuitBreakerPolicy);
 });
 
-builder.Services.AddRouting(routingServices =>
-{
-    routingServices.LowercaseUrls = true;
-});
+builder.Services.AddRouting(routingServices => { routingServices.LowercaseUrls = true; });
 
 var app = builder.Build();
 

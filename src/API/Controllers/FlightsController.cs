@@ -12,15 +12,18 @@ public class FlightsController : Controller
 {
     private readonly Routes _routes;
     private readonly ILogger<FlightsController> _logger;
+    private readonly CircuitBreakerPolicy _circuitBreakerPolicy;
     private readonly TimeoutPolicy _timeoutPolicy;
 
     public FlightsController(
-        Routes routes, 
+        Routes routes,
         IConfiguration configuration,
-        ILogger<FlightsController> logger)
+        ILogger<FlightsController> logger,
+        CircuitBreakerPolicy circuitBreakerPolicy)
     {
         _routes = routes;
         _logger = logger;
+        _circuitBreakerPolicy = circuitBreakerPolicy;
 
         var timeoutInMilliseconds = configuration.GetValue<int>("PollySettings:Timeout:Milliseconds");
 
@@ -38,6 +41,9 @@ public class FlightsController : Controller
         
         try
         {
+            if (_circuitBreakerPolicy.CircuitState == CircuitState.Open)
+                throw new BrokenCircuitException();
+
             var result = _timeoutPolicy.Execute(() => _routes.GetRoutes(from, to));
             return Ok(result);
         }
