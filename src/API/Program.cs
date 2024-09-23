@@ -1,5 +1,7 @@
 using System.Data;
 using API.DataAccess;
+using API.HealthCheck;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MySql.Data.MySqlClient;
 using Polly;
 using Polly.CircuitBreaker;
@@ -8,27 +10,25 @@ using Polly.Wrap;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var configuration = builder.Configuration;
+var mySqlConnectionBuilder = new MySqlConnectionStringBuilder(
+    configuration.GetConnectionString("DefaultConnection"))
+{
+    UserID = configuration["ConnectionStrings:DefaultConnection:DB_USER"],
+    Password = configuration["ConnectionStrings:DefaultConnection:DB_PASSWORD"]
+};
+var connectionString = mySqlConnectionBuilder.ConnectionString;
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<IDbConnection>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var connectionString = configuration.GetConnectionString("DefaultConnection");
-    var mySqlConnectionBuilder = new MySqlConnectionStringBuilder(connectionString)
-    {
-        UserID = builder.Configuration["ConnectionStrings:DefaultConnection:DB_USER"],
-        Password = builder.Configuration["ConnectionStrings:DefaultConnection:DB_PASSWORD"]
-    };
-    return new MySqlConnection(mySqlConnectionBuilder.ConnectionString);
-});
+builder.Services.AddScoped<IDbConnection>(_ => new MySqlConnection(connectionString));
 
 builder.Services.AddScoped<Routes>();
 
 builder.Services.AddSingleton<RetryPolicy>(sp =>
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
     var logger = sp.GetRequiredService<ILogger<Routes>>();
 
     var retryCount =
@@ -52,7 +52,6 @@ builder.Services.AddSingleton<RetryPolicy>(sp =>
 
 builder.Services.AddSingleton<CircuitBreakerPolicy>(sp =>
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
     var logger = sp.GetRequiredService<ILogger<Routes>>();
 
     var exceptionsAllowedBeforeBreaking =
@@ -84,6 +83,19 @@ builder.Services.AddSingleton<PolicyWrap>(sp =>
 
 builder.Services.AddRouting(routingServices => { routingServices.LowercaseUrls = true; });
 
+builder.Services.AddHealthChecks()
+    .AddMySql(
+        connectionString: connectionString,
+        name: "MySQL",
+        healthQuery: "SELECT 1;",
+        failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
+        tags: ["db", "sql", "mysql"]
+    )
+    .AddCheck<CircuitBreakerHealthCheck>(
+        name: "Circuit Breaker",
+        tags: ["polly", "circuitbreaker"]);
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -91,6 +103,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = CustomHealthCheckResponseWriter.WriteResponse,
+});
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
