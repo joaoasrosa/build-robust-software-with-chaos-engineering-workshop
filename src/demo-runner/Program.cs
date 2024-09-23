@@ -74,7 +74,7 @@ internal abstract class Program
                 }
 
                 Console.WriteLine(
-                    $"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}. From {from} tp {to}.");
+                    $"API call took {stopwatch.ElapsedMilliseconds} ms, with HTTP status {response.StatusCode}. From {from} to {to}.");
             }
             catch (TaskCanceledException)
             {
