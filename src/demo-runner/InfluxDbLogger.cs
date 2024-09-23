@@ -28,7 +28,10 @@ public class InfluxDbLogger : ILogger, IMetricsLogger
         _logLevel = logLevel;
     }
 
-    public IDisposable BeginScope<TState>(TState state) => null;
+    IDisposable? ILogger.BeginScope<TState>(TState state)
+    {
+        return null;
+    }
 
     public bool IsEnabled(LogLevel logLevel)
     {
@@ -39,8 +42,8 @@ public class InfluxDbLogger : ILogger, IMetricsLogger
         LogLevel logLevel,
         EventId eventId,
         TState state,
-        Exception exception,
-        Func<TState, Exception, string> formatter)
+        Exception? exception,
+        Func<TState, Exception?, string> formatter)
     {
         if (!IsEnabled(logLevel))
         {
@@ -51,33 +54,33 @@ public class InfluxDbLogger : ILogger, IMetricsLogger
         var logLevelTag = logLevel.ToString();
 
         var point = PointData
-            .Measurement("logs") // Measurement name
-            .Tag("level", logLevelTag) // Log level as a tag
-            .Tag("category", _categoryName) // Log category as a tag
-            .Field("message", logMessage) // The actual log message
-            .Field("event_id", eventId.Id) // Event ID (if available)
-            .Field("exception", exception?.ToString()) // Exception, if any
-            .Timestamp(DateTime.UtcNow, WritePrecision.Ns); // Timestamp
+            .Measurement("logs")
+            .Tag("level", logLevelTag)
+            .Tag("category", _categoryName)
+            .Field("message", logMessage)
+            .Field("event_id", eventId.Id)
+            .Field("exception", exception?.ToString())
+            .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
 
         var writeApi = _influxClient.GetWriteApiAsync();
         await writeApi.WritePointAsync(point, _bucket, _org);
     }
 
     public async Task LogMetricAsync(
-        string metricName, 
-        double value, 
-        string fieldName = "value", 
-        string? tagKey = null, 
+        string metricName,
+        double value,
+        string fieldName = "value",
+        string? tagKey = null,
         string? tagValue = null)
     {
         var point = PointData
-            .Measurement(metricName)           // Metric name (e.g., "cpu_usage")
-            .Field(fieldName, value)           // Metric value
-            .Timestamp(DateTime.UtcNow, WritePrecision.Ns);  // Timestamp
+            .Measurement(metricName)
+            .Field(fieldName, value)
+            .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
 
         if (tagKey != null && tagValue != null)
         {
-            point.Tag(tagKey, tagValue);       // Optional tag (e.g., "status" -> "200")
+            point.Tag(tagKey, tagValue);
         }
 
         var writeApi = _influxClient.GetWriteApiAsync();
@@ -107,7 +110,7 @@ public class InfluxDbLoggerProvider : ILoggerProvider
         _org = org;
         _logLevel = logLevel;
     }
-    
+
     public IMetricsLogger CreateMetricsLogger(string categoryName)
     {
         return new InfluxDbLogger(categoryName, _influxClient, _bucket, _org, _logLevel);
@@ -115,9 +118,10 @@ public class InfluxDbLoggerProvider : ILoggerProvider
 
     public ILogger CreateLogger(string categoryName)
     {
-        return _loggers.GetOrAdd(categoryName, name => new InfluxDbLogger(name, _influxClient, _bucket, _org, _logLevel));
+        return _loggers.GetOrAdd(categoryName,
+            name => new InfluxDbLogger(name, _influxClient, _bucket, _org, _logLevel));
     }
-    
+
     public void Dispose()
     {
         _influxClient.Dispose();
